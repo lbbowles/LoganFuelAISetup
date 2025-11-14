@@ -9,28 +9,22 @@ class ForumPost extends Model
 {
     use HasFactory;
 
-    /**
-     * The table associated with the model
-     *
-     * @var string
-     */
     protected $table = 'forum_posts';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
-        'forum_id',
+        'category_id',  // ADDED
         'user_id',
         'title',
         'content',
     ];
 
+    protected $attributes = [
+        'category_id' => 1,  // ADDED - default value
+    ];
+
     public function forum()
     {
-        return $this->belongsTo(Forum::class);
+        return $this->belongsTo(Forum::class, 'category_id');  // UPDATED - category_id is the foreign key
     }
 
     public function user()
@@ -42,5 +36,4 @@ class ForumPost extends Model
     {
         return $this->hasMany(ForumThread::class, 'post_id');
     }
-
 }

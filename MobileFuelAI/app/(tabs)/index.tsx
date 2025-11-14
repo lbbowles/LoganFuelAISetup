@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { View, useColorScheme, Image, ScrollView, Text, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator } from "react-native";
+import { View, useColorScheme, Image, Text, TouchableOpacity, Modal, TextInput, Alert, ActivityIndicator } from "react-native";
 import { ThemeProvider, DarkTheme, DefaultTheme } from "@react-navigation/native";
 import { images } from "@/constants/images";
-import { Link, router } from "expo-router";
+import { router } from "expo-router";
 import { useAuth } from "../context/AuthContext.js";
 import { withAuth } from "@/services/api";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Task = {
-    task_id: number;
+    id: number;
     user_id: number;
     title: string | null;
-    content: string;
+    description: string;
     difficulty: string;
     category: string;
     is_completed: boolean;
@@ -27,7 +27,6 @@ export default function Index() {
     // Profile edit modal state
     const [showEditProfile, setShowEditProfile] = useState(false);
     const [newUsername, setNewUsername] = useState(user?.username || '');
-    const [newProfileImage, setNewProfileImage] = useState(user?.profile_image_url || '');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Tasks state
@@ -77,7 +76,7 @@ export default function Index() {
         setIsSubmitting(true);
         try {
             const api = withAuth(session.access_token);
-            const result = await api.updateProfile(newUsername, newProfileImage || null);
+            const result = await api.updateProfile(newUsername, null);
 
             // Update AsyncStorage to not sign out user.
             const updatedUser = { ...user, ...result.user };
@@ -123,7 +122,7 @@ export default function Index() {
     return (
         <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
             <View className={`flex-1 ${isDark ? "bg-primary" : "bg-secondary"}`}>
-                <ScrollView className="flex-1 px-6 py-12" contentContainerClassName="items-center pb-20">
+                <View className="flex-1 px-6 py-12 items-center">
                     {/* Avatar */}
                     <View className="w-28 h-28 rounded-full overflow-hidden items-center justify-center border"
                           style={{ borderColor: isDark ? "#ffffff22" : "#00000022" }}>
@@ -153,32 +152,27 @@ export default function Index() {
                     <TouchableOpacity
                         onPress={() => {
                             setNewUsername(user?.username || '');
-                            setNewProfileImage(user?.profile_image_url || '');
                             setShowEditProfile(true);
                         }}
-                        className="mt-4 px-6 py-2 rounded-full"
-                        style={{ backgroundColor: isDark ? "#3b82f6" : "#2563eb" }}
+                        className={`mt-4 px-6 py-2 rounded-full ${isDark ? 'bg-dark-100' : 'bg-light-100'}`}
                     >
                         <Text className="text-white font-semibold">Edit Profile</Text>
                     </TouchableOpacity>
 
                     {/* Actions */}
                     <View className="w-full max-w-md mt-8">
-                        <Link
-                            href={`/food/${new Date().toISOString().split('T')[0]}`}
-                            asChild>
-                            <TouchableOpacity
-                                className="rounded-2xl px-4 py-4"
-                                style={{
-                                    backgroundColor: isDark ? "#ffffff0f" : "#00000008",
-                                    borderWidth: 1
-                                }}
-                            >
-                                <Text className={`text-lg font-semibold ${isDark ? "text-secondary" : "text-primary"}`}>
-                                    View Today
-                                </Text>
-                            </TouchableOpacity>
-                        </Link>
+                        <TouchableOpacity
+                            onPress={() => router.push(`/calendar/${new Date().toISOString().split('T')[0]}`)}
+                            className="rounded-2xl px-4 py-4"
+                            style={{
+                                backgroundColor: isDark ? "#ffffff0f" : "#00000008",
+                                borderWidth: 1
+                            }}
+                        >
+                            <Text className={`text-lg font-semibold ${isDark ? "text-secondary" : "text-primary"}`}>
+                                View Your Current Day
+                            </Text>
+                        </TouchableOpacity>
                     </View>
 
                     {/* Upcoming Tasks Section */}
@@ -211,7 +205,7 @@ export default function Index() {
                                     const deadlineInfo = formatDeadline(task.deadline);
                                     return (
                                         <View
-                                            key={task.task_id}
+                                            key={task.id}
                                             className="rounded-xl p-3 border"
                                             style={{ backgroundColor: isDark ? "#ffffff0f" : "#00000008" }}
                                         >
@@ -223,7 +217,7 @@ export default function Index() {
                                                         </Text>
                                                     )}
                                                     <Text className={`font-semibold ${isDark ? "text-white" : "text-black"}`} numberOfLines={2}>
-                                                        {task.content}
+                                                        {task.description}
                                                     </Text>
                                                     <View className="flex-row gap-2 mt-2">
                                                         <View className="px-2 py-1 rounded" style={{ backgroundColor: getDifficultyColor(task.difficulty) + '20' }}>
@@ -254,11 +248,7 @@ export default function Index() {
 
                         <TouchableOpacity
                             onPress={() => router.push('/tasks/createTask')}
-                            className="rounded-2xl px-4 py-4 border"
-                            style={{
-                                backgroundColor: isDark ? "#3b82f6" : "#2563eb",
-                                borderColor: isDark ? "#3b82f6" : "#2563eb"
-                            }}
+                            className={`rounded-2xl px-4 py-4 ${isDark ? 'bg-dark-100' : 'bg-light-100'}`}
                         >
                             <Text className="text-lg font-semibold text-white text-center">
                                 + Create New Task
@@ -270,43 +260,36 @@ export default function Index() {
                     <View className="w-full max-w-md mt-10">
                         <TouchableOpacity
                             onPress={() => router.push('/forum/userForum')}
-                            className="rounded-2xl px-4 py-4 border"
-                            style={{
-                                backgroundColor: isDark ? "#ffffff0f" : "#00000008",
-                                borderWidth: 1,
-                                borderColor: isDark ? "#3b82f6" : "#2563eb"
-                            }}
+                            className={`rounded-2xl px-4 py-4 ${isDark ? 'bg-dark-100' : 'bg-light-100'}`}
                         >
-                            <Text className={`text-lg font-semibold ${isDark ? "text-secondary" : "text-primary"} text-center`}>
+                            <Text className="text-lg font-semibold text-white text-center">
                                 My Forum Posts
                             </Text>
                         </TouchableOpacity>
                     </View>
 
+                    {/* Separator Line */}
+                    <View className="w-full max-w-md my-6">
+                        <View className={`h-px ${isDark ? 'bg-white/20' : 'bg-black/20'}`} />
+                    </View>
+
                     {/* Sign out */}
-                    <View className="w-full max-w-md mt-6">
+                    <View className="w-full max-w-md">
                         <TouchableOpacity
                             onPress={async () => {
                                 await signout();
                                 router.replace('/signin');
                             }}
-                            className="rounded-2xl px-4 py-4"
-                            style={{
-                                backgroundColor: isDark ? "#ffffff0f" : "#00000008",
-                                borderWidth: 1,
-                                borderColor: "#ef4444"
-                            }}
+                            className="rounded-2xl px-4 py-4 bg-red-500"
                         >
-                            <Text className="text-lg font-semibold text-red-500 text-center">
+                            <Text className="text-lg font-semibold text-white text-center">
                                 Sign Out
                             </Text>
                         </TouchableOpacity>
                     </View>
+                </View>
 
-                    <View className="h-10" />
-                </ScrollView>
-
-                {/* Edit Profile Modal */}
+                {/* Edit Profile Modal - Simplified */}
                 <Modal
                     visible={showEditProfile}
                     transparent
@@ -316,7 +299,7 @@ export default function Index() {
                     <View className="flex-1 bg-black/50 justify-center px-6">
                         <View className={`rounded-2xl p-6 ${isDark ? "bg-gray-900" : "bg-white"}`}>
                             <Text className={`text-xl font-bold mb-4 ${isDark ? "text-white" : "text-black"}`}>
-                                Edit Profile
+                                Edit Username
                             </Text>
 
                             {/* Username Input */}
@@ -328,39 +311,10 @@ export default function Index() {
                                 onChangeText={setNewUsername}
                                 placeholder="Enter username"
                                 placeholderTextColor={isDark ? '#666' : '#999'}
-                                className={`border rounded-xl p-3 mb-4 ${
+                                className={`border rounded-xl p-3 mb-6 ${
                                     isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-300 text-black'
                                 }`}
                             />
-
-                            {/* Profile Image URL Input */}
-                            <Text className={`mb-2 ${isDark ? "text-white/80" : "text-black/80"}`}>
-                                Profile Image URL
-                            </Text>
-                            <TextInput
-                                value={newProfileImage}
-                                onChangeText={setNewProfileImage}
-                                placeholder="https://example.com/image.jpg"
-                                placeholderTextColor={isDark ? '#666' : '#999'}
-                                className={`border rounded-xl p-3 mb-4 ${
-                                    isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-300 text-black'
-                                }`}
-                            />
-
-                            {/* Preview */}
-                            {newProfileImage && (
-                                <View className="items-center mb-4">
-                                    <Text className={`mb-2 ${isDark ? "text-white/80" : "text-black/80"}`}>Preview:</Text>
-                                    <View className="w-20 h-20 rounded-full overflow-hidden items-center justify-center border"
-                                          style={{ borderColor: isDark ? "#ffffff22" : "#00000022" }}>
-                                        <Image
-                                            source={{ uri: newProfileImage }}
-                                            className="w-full h-full"
-                                            resizeMode="cover"
-                                        />
-                                    </View>
-                                </View>
-                            )}
 
                             {/* Action Buttons */}
                             <View className="flex-row gap-3">
@@ -376,7 +330,7 @@ export default function Index() {
                                     onPress={handleUpdateProfile}
                                     disabled={isSubmitting || !newUsername.trim()}
                                     className={`flex-1 rounded-xl p-3 ${
-                                        isSubmitting || !newUsername.trim() ? 'bg-gray-400' : 'bg-blue-500'
+                                        isSubmitting || !newUsername.trim() ? 'bg-gray-400' : isDark ? 'bg-dark-100' : 'bg-light-100'
                                     }`}
                                 >
                                     <Text className="text-white text-center font-semibold">

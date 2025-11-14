@@ -25,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/forums', [ForumController::class, 'store']);
     Route::post('/forums/{post}/reply', [ForumController::class, 'reply']);
     Route::delete('/forums/{id}', [ForumController::class, 'destroy']);
+    Route::get('/forums-categories', [ForumController::class, 'getCategories']);
 
     // Meals
     Route::get('/meals', [MealController::class, 'index']);
@@ -37,6 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/meal-plans/{id}', [MealPlanController::class, 'destroy']);
     Route::post('/meal-plans/{id}/add-meal', [MealPlanController::class, 'addMeal']);
     Route::delete('/meal-plans-meals/{id}', [MealPlanController::class, 'removeMeal']);
+    Route::post('/meal-plans/{id}/touch', [MealPlanController::class, 'touch']);
 
     // Tasks
     Route::get('/tasks', [TaskController::class, 'index']);

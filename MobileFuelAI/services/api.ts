@@ -125,9 +125,9 @@ export function withAuth(token: string) {
             });
         },
 
-        async removeMealFromPlan(mealPlanMealId: number) {
-            return request(`/meal-plan-meals/${mealPlanMealId}`, {
-                method: "DELETE",
+        async touchMealPlan(mealPlanId: number) {
+            return request(`/meal-plans/${mealPlanId}/touch`, {
+                method: "POST",
                 headers: auth,
             });
         },
@@ -140,6 +140,8 @@ export function withAuth(token: string) {
             });
         },
 
+
+        // Uncomment to resolve
         async getForumPosts() {
             return request("/forums", {
                 method: "GET",
@@ -147,15 +149,22 @@ export function withAuth(token: string) {
             });
         },
 
-        async createPost(forumId: number, title: string, content: string) {
+        async getForums() {
+            return request('/forums-categories', {
+                method: "GET",
+                headers: auth,
+            });
+        },
+
+        async createForumPost(title: string, content: string, categoryId: number) {
             return request("/forums", {
                 method: "POST",
                 headers: auth,
                 body: JSON.stringify({
-                    forum_id: forumId,
                     title,
-                    content
-                }),
+                    content,
+                    category_id: categoryId
+                } as any),
             });
         },
 
@@ -166,13 +175,6 @@ export function withAuth(token: string) {
             });
         },
 
-        async createForumPost(title: string, content: string) {
-            return request("/forums", {
-                method: "POST",
-                headers: auth,
-                body: JSON.stringify({ title, content }),
-            });
-        },
 
         async getForumPost(id: number) {
             return request(`/forums/${id}`, {
@@ -235,6 +237,7 @@ export function withAuth(token: string) {
             });
         },
 
+        // I never added this as I thought it would be cool to collect all your tasks that are done, but pretty simple
         async deleteTask(taskId: number) {
             return request(`/tasks/${taskId}`, {
                 method: "DELETE",

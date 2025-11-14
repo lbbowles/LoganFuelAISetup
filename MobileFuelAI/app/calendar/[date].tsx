@@ -32,10 +32,10 @@ type MealPlanMeal = {
 };
 
 type Task = {
-    task_id: number;
+    id: number;
     user_id: number;
     title: string | null;
-    content: string;
+    description: string;
     difficulty: string | null;
     category: string | null;
     is_completed: boolean;
@@ -47,21 +47,32 @@ type Task = {
 const mealTimes = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
 
 function formatNice(dateStr: string) {
-    const d = new Date(dateStr);
+    const [year, month, day] = dateStr.split('-');
+    const d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     if (isNaN(d.getTime())) return dateStr;
     return d.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 }
 
 function getDayOfWeek(dateStr: string): string {
-    const d = new Date(dateStr);
+    const [year, month, day] = dateStr.split('-');
+    const d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return days[d.getDay()];
 }
 
 // Returns YYYY-MM-DD so that it can compare to the MealPlan
 function formatDateForComparison(dateStr: string): string {
-    const d = new Date(dateStr);
-    return d.toISOString().split('T')[0];
+    // If already in YYYY-MM-DD format, return as-is
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        return dateStr;
+    }
+    // Otherwise parse and format
+    const [year, month, day] = dateStr.split('-');
+    const d = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
 }
 
 export default function FoodForDay() {
@@ -157,7 +168,7 @@ export default function FoodForDay() {
 
     return (
         <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-            <ScrollView className={`flex-1 ${isDark ? "bg-primary" : "bg-secondary"} px-6 py-12`} contentContainerStyle={{ paddingBottom: 40 }}>
+            <ScrollView className={`flex-1 ${isDark ? "bg-primary" : "bg-secondary"} px-6 py-16`} contentContainerStyle={{ paddingBottom: 40 }}>
 
                 {/* Back Button */}
                 <TouchableOpacity onPress={() => router.push('/calendar')} className="mb-4">
@@ -200,7 +211,10 @@ export default function FoodForDay() {
                                         {mealTime}
                                     </Text>
                                     {mealSlot ? (
-                                        <View>
+                                        <TouchableOpacity
+                                            onPress={() => router.push(`/recipes/${mealSlot.meal.id}`)}
+                                            activeOpacity={0.7}
+                                        >
                                             <Text className={`font-bold text-lg ${isDark ? "text-white" : "text-black"}`}>
                                                 {mealSlot.meal.name}
                                             </Text>
@@ -212,7 +226,10 @@ export default function FoodForDay() {
                                                     {mealSlot.meal.description}
                                                 </Text>
                                             )}
-                                        </View>
+                                            <Text className={`mt-2 text-xs ${isDark ? "text-blue-400" : "text-blue-600"}`}>
+                                                Tap to view full recipe →
+                                            </Text>
+                                        </TouchableOpacity>
                                     ) : (
                                         <Text className={`${isDark ? "text-white/40" : "text-black/30"}`}>
                                             No meal planned
@@ -232,36 +249,27 @@ export default function FoodForDay() {
                         </Text>
                         {tasks.map((task) => (
                             <TouchableOpacity
-                                key={task.task_id}
-                                onPress={() => toggleTaskCompletion(task.task_id, task.is_completed)}
+                                key={task.id}
+                                onPress={() => toggleTaskCompletion(task.id, task.is_completed)}
                                 className={`mb-3 rounded-2xl p-4 border ${
                                     isDark ? "bg-white/5 border-white/10" : "bg-black/5 border-black/10"
                                 }`}
                             >
                                 <View className="flex-row items-start gap-3">
-                                    {/* Checkbox */}
-                                    <View className={`w-6 h-6 rounded border-2 items-center justify-center mt-1 ${
+                                    <View className={`w-6 h-6 rounded border-2 mt-1 ${
                                         task.is_completed
                                             ? 'bg-green-500 border-green-500'
                                             : (isDark ? 'border-white/40' : 'border-black/40')
-                                    }`}>
-                                        {task.is_completed && (
-                                            <Text className="text-white text-sm font-bold">✓</Text>
-                                        )}
-                                    </View>
+                                    }`} />
 
                                     <View className="flex-1">
                                         {task.title && (
-                                            <Text className={`font-bold text-lg ${
-                                                task.is_completed ? 'line-through opacity-60' : ''
-                                            } ${isDark ? "text-white" : "text-black"} mb-1`}>
+                                            <Text className={`font-bold text-lg ${isDark ? "text-white" : "text-black"} mb-1`}>
                                                 {task.title}
                                             </Text>
                                         )}
-                                        <Text className={`${
-                                            task.is_completed ? 'line-through opacity-60' : ''
-                                        } ${isDark ? "text-white/80" : "text-black/80"} mb-2`}>
-                                            {task.content}
+                                        <Text className={`${isDark ? "text-white/80" : "text-black/80"} mb-2`}>
+                                            {task.description}
                                         </Text>
                                         <View className="flex-row items-center gap-2 flex-wrap">
                                             {task.difficulty && (
@@ -289,23 +297,19 @@ export default function FoodForDay() {
                 {/* Quick Actions */}
                 <View className="mt-8 gap-3">
                     <TouchableOpacity
-                        onPress={() => router.push('/meal-plans')}
-                        className={`rounded-2xl px-4 py-4 border ${
-                            isDark ? "bg-white/5 border-white/10" : "bg-black/5 border-black/10"
-                        }`}
+                        onPress={() => router.push('/mealPlans')}
+                        className={`rounded-2xl px-4 py-4 ${isDark ? 'bg-dark-100' : 'bg-light-100'}`}
                     >
-                        <Text className={`text-center font-semibold ${isDark ? "text-secondary" : "text-primary"}`}>
+                        <Text className="text-center font-semibold text-white">
                             View Meal Plans
                         </Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         onPress={() => router.push('/tasks/createTask')}
-                        className={`rounded-2xl px-4 py-4 border ${
-                            isDark ? "bg-white/5 border-white/10" : "bg-black/5 border-black/10"
-                        }`}
+                        className={`rounded-2xl px-4 py-4 ${isDark ? 'bg-dark-100' : 'bg-light-100'}`}
                     >
-                        <Text className={`text-center font-semibold ${isDark ? "text-secondary" : "text-primary"}`}>
+                        <Text className="text-center font-semibold text-white">
                             Create New Task
                         </Text>
                     </TouchableOpacity>

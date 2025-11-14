@@ -8,10 +8,11 @@ import {withAuth} from "@/services/api";
 
 // Type definitions to avoid annoying type errors
 type Task = {
-    task_id: number;
+    id: number;
     user_id: number;
     title: string | null;
-    content: string;
+    content: string | null;
+    description: string;
     difficulty: string | null;
     category: string | null;
     is_completed: boolean;
@@ -105,7 +106,7 @@ export default function Tasks() {
 
     const TaskCard = ({ task }: { task: Task }) => (
         <TouchableOpacity
-            onPress={() => toggleTaskCompletion(task.task_id, task.is_completed)}
+            onPress={() => toggleTaskCompletion(task.id, task.is_completed)}
             className={`mb-3 rounded-2xl p-4 border ${
                 isDark ? "bg-white/5 border-white/10" : "bg-black/5 border-black/10"
             }`}
@@ -133,7 +134,66 @@ export default function Tasks() {
                     <Text className={`${
                         task.is_completed ? 'line-through opacity-60' : ''
                     } ${isDark ? "text-white/80" : "text-black/80"} mb-2`} numberOfLines={3}>
-                        {task.content}
+                        {task.description}
+                    </Text>
+                    <View className="flex-row items-center gap-2 flex-wrap">
+                        {task.difficulty && (
+                            <View className="px-2 py-1 rounded" style={{ backgroundColor: getDifficultyColor(task.difficulty) + '30' }}>
+                                <Text className="text-xs font-semibold" style={{ color: getDifficultyColor(task.difficulty) }}>
+                                    {task.difficulty}
+                                </Text>
+                            </View>
+                        )}
+                        {task.category && (
+                            <View className={`px-2 py-1 rounded ${isDark ? 'bg-white/10' : 'bg-black/10'}`}>
+                                <Text className={`text-xs ${isDark ? "text-white/70" : "text-black/70"}`}>
+                                    {task.category}
+                                </Text>
+                            </View>
+                        )}
+                        {task.deadline && (
+                            <View className={`px-2 py-1 rounded ${
+                                formatDeadline(task.deadline) === 'Overdue'
+                                    ? 'bg-red-500/30'
+                                    : formatDeadline(task.deadline) === 'Today'
+                                        ? 'bg-orange-500/30'
+                                        : 'bg-blue-500/30'
+                            }`}>
+                                <Text className={`text-xs font-semibold ${
+                                    formatDeadline(task.deadline) === 'Overdue'
+                                        ? 'text-red-600'
+                                        : formatDeadline(task.deadline) === 'Today'
+                                            ? 'text-orange-600'
+                                            : 'text-blue-600'
+                                }`}>
+                                    {formatDeadline(task.deadline)}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                </View>
+            </View>
+        </TouchableOpacity>
+    );
+
+    const CompletedTaskCard = ({ task }: { task: Task }) => (
+        <TouchableOpacity
+            onPress={() => toggleTaskCompletion(task.id, task.is_completed)}
+            className={`mb-3 rounded-2xl p-4 border ${
+                isDark ? "bg-white/5 border-white/10" : "bg-black/5 border-black/10"
+            }`}
+        >
+            <View className="flex-row items-start gap-3">
+                <View className="w-6 h-6 rounded bg-green-500 border-2 border-green-500 mt-1" />
+
+                <View className="flex-1">
+                    {task.title && (
+                        <Text className={`font-bold text-lg ${isDark ? "text-white" : "text-black"} mb-1`}>
+                            {task.title}
+                        </Text>
+                    )}
+                    <Text className={`${isDark ? "text-white/80" : "text-black/80"} mb-2`} numberOfLines={3}>
+                        {task.description}
                     </Text>
                     <View className="flex-row items-center gap-2 flex-wrap">
                         {task.difficulty && (
@@ -232,7 +292,7 @@ export default function Tasks() {
                 <View className="flex-row gap-3 mb-6">
                     <TouchableOpacity
                         onPress={() => router.push('/tasks/createTask')}
-                        className="flex-1 bg-blue-500 rounded-2xl p-4 items-center"
+                        className={`flex-1 rounded-2xl p-4 items-center ${isDark ? 'bg-dark-100' : 'bg-light-100'}`}
                     >
                         <Text className="text-white font-semibold">+ New Task</Text>
                     </TouchableOpacity>
@@ -256,7 +316,7 @@ export default function Tasks() {
                             </Text>
                         </View>
                     ) : (
-                        regularTasks.map(task => <TaskCard key={task.task_id} task={task} />)
+                        regularTasks.map(task => <TaskCard key={task.id} task={task} />)
                     )}
                 </View>
 
@@ -272,7 +332,7 @@ export default function Tasks() {
                             </Text>
                         </View>
                     ) : (
-                        exerciseTasks.map(task => <TaskCard key={task.task_id} task={task} />)
+                        exerciseTasks.map(task => <TaskCard key={task.id} task={task} />)
                     )}
                 </View>
 
@@ -282,7 +342,7 @@ export default function Tasks() {
                         <Text className={`text-xl font-bold ${isDark ? "text-white" : "text-black"} mb-4`}>
                             Completed ({completedTasks.length})
                         </Text>
-                        {completedTasks.map(task => <TaskCard key={task.task_id} task={task} />)}
+                        {completedTasks.map(task => <CompletedTaskCard key={task.id} task={task} />)}
                     </View>
                 )}
             </ScrollView>

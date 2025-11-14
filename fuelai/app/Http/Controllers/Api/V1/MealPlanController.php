@@ -90,9 +90,9 @@ class MealPlanController extends Controller
                 'meal_id' => $validated['meal_id'],
                 'updated_at' => now()
             ]);
-            
+
             $existing->load(['meal.nutritionalInfo']);
-            
+
             return response()->json([
                 'message' => 'Meal updated successfully!',
                 'meal_plan_meal' => $existing
@@ -112,6 +112,25 @@ class MealPlanController extends Controller
             'message' => 'Meal added successfully!',
             'meal_plan_meal' => $mealPlanMeal
         ], 201);
+    }
+
+    // Update the meal plan so that it is therefore set "active"
+    public function touch($id)
+    {
+        $mealPlan = MealPlan::findOrFail($id);
+
+        // Check if user owns this meal plan
+        if ($mealPlan->user_id !== auth()->id()) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Touch updates the updated_at timestamp
+        $mealPlan->touch();
+
+        return response()->json([
+            'message' => 'Meal plan set as active',
+            'meal_plan' => $mealPlan
+        ]);
     }
 
     public function removeMeal($mealPlanMealId)

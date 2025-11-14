@@ -6,29 +6,48 @@ import { router } from "expo-router";
 import { useAuth } from "../context/AuthContext";
 import { withAuth } from "@/services/api";
 
+type Forum = {
+    id: number;
+    name: string;
+    description: string;
+};
+
 const Forum = () => {
     const { session } = useAuth();
     const isDark = useColorScheme() === "dark";
     const [posts, setPosts] = useState([]);
+    const [forums, setForums] = useState<Forum[]>([]);
+    const [selectedForumId, setSelectedForumId] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchPosts();
+        fetchForumsAndPosts();
     }, []);
 
-    const fetchPosts = async () => {
+    const fetchForumsAndPosts = async () => {
         try {
             setLoading(true);
             const api = withAuth(session.access_token);
-            const data = await api.getAllPosts();
-            //console.log('Posts data:', JSON.stringify(data.posts[0], null, 2));
-            setPosts(data.posts);
+
+            // Fetch forums
+            const forumsData = await api.getForums();
+            setForums(forumsData.forums || []);
+
+            // Fetch posts
+            const postsData = await api.getAllPosts();
+            setPosts(postsData.posts);
+
         } catch (error) {
-            console.error('Failed to fetch posts:', error);
+            console.error('Failed to fetch data:', error);
         } finally {
             setLoading(false);
         }
     };
+
+    // Filter posts by selected forum
+    const filteredPosts = selectedForumId
+        ? posts.filter(post => post.category_id === selectedForumId)
+        : posts;
 
     return (
         <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
@@ -45,27 +64,76 @@ const Forum = () => {
                         </Text>
                     </View>
 
+                    {/* Category Filter Tabs */}
+                    {forums.length > 0 && (
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            className="mt-6 mb-2"
+                            contentContainerStyle={{ paddingHorizontal: 0 }}
+                        >
+                            <TouchableOpacity
+                                onPress={() => setSelectedForumId(null)}
+                                className={`px-4 py-2 rounded-full mr-2 ${
+                                    selectedForumId === null
+                                        ? (isDark ? 'bg-dark-100' : 'bg-light-100')
+                                        : (isDark ? 'bg-white/10' : 'bg-black/10')
+                                }`}
+                            >
+                                <Text className={`font-semibold ${
+                                    selectedForumId === null
+                                        ? 'text-white'
+                                        : (isDark ? 'text-white/70' : 'text-black/70')
+                                }`}>
+                                    All
+                                </Text>
+                            </TouchableOpacity>
+
+                            {forums.map((forum) => (
+                                <TouchableOpacity
+                                    key={forum.id}
+                                    onPress={() => setSelectedForumId(forum.id)}
+                                    className={`px-4 py-2 rounded-full mr-2 ${
+                                        selectedForumId === forum.id
+                                            ? (isDark ? 'bg-dark-100' : 'bg-light-100')
+                                            : (isDark ? 'bg-white/10' : 'bg-black/10')
+                                    }`}
+                                >
+                                    <Text className={`font-semibold ${
+                                        selectedForumId === forum.id
+                                            ? 'text-white'
+                                            : (isDark ? 'text-white/70' : 'text-black/70')
+                                    }`}>
+                                        {forum.name}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    )}
+
                     {/* Loading State */}
                     {loading ? (
                         <View className="mt-20 items-center">
                             <ActivityIndicator size="large" color={isDark ? "#fff" : "#000"} />
                         </View>
-                    ) : posts.length === 0 ? (
+                    ) : filteredPosts.length === 0 ? (
                         <View className={`mt-10 rounded-2xl p-6 border ${
                             isDark ? 'bg-secondary/10 border-secondary/15' : 'bg-primary/5 border-primary/10'
                         }`}>
                             <Text className={`text-center ${isDark ? "text-white/60" : "text-black/50"}`}>
-                                No posts yet. Be the first to start the conversation!
+                                {selectedForumId
+                                    ? "No posts in this forum yet. Be the first!"
+                                    : "No posts yet. Be the first to start the conversation!"}
                             </Text>
                         </View>
                     ) : (
                         /* Post cards */
-                        <View className="mt-6 space-y-4">
-                            {posts.map((post) => (
+                        <View className="mt-6">
+                            {filteredPosts.map((post) => (
                                 <TouchableOpacity
                                     key={post.id}
                                     onPress={() => router.push(`/forum/${post.id}`)}
-                                    className={`rounded-2xl p-4 border ${
+                                    className={`rounded-2xl p-4 border mb-3 ${
                                         isDark ? 'bg-secondary/10 border-secondary/15' : 'bg-primary/5 border-primary/10'
                                     }`}
                                 >

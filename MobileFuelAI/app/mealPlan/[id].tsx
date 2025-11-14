@@ -6,8 +6,6 @@ import { useLocalSearchParams, router } from "expo-router";
 import { useAuth } from "../context/AuthContext";
 import { withAuth } from "@/services/api";
 
-// Type definitions
-
 // Nutritional info type
 type NutritionalInfo = {
     id: number;
@@ -105,6 +103,21 @@ const MealPlanView = () => {
             setAllMeals(data.meals || []);
         } catch (error) {
             console.error('Failed to fetch meals:', error);
+        }
+    };
+
+    // Update the active meal plan for calendar
+    const setAsActivePlan = async () => {
+        try {
+            const api = withAuth(session.access_token);
+
+            // Use the API service instead of direct fetch
+            await api.touchMealPlan(Number(id));
+
+            Alert.alert('Success', 'This meal plan is now active on your calendar!');
+        } catch (error) {
+            console.error('Failed to set active plan:', error);
+            Alert.alert('Error', 'Failed to set as active plan');
         }
     };
 
@@ -234,18 +247,51 @@ const MealPlanView = () => {
                         </Text>
 
                         {mealPlan.description && (
-                            <Text className={`${isDark ? "text-white/70" : "text-black/60"} mt-2`}>
+                            <Text className={`${isDark ? "text-white/70" : "text-black/60"} mt-2 mb-6`}>
                                 {mealPlan.description}
                             </Text>
                         )}
 
-                        {/*Access function to create a new meal to add to the database*/}
+                        {/* Set active mealplan by updating in DB */}
                         <TouchableOpacity
-                            onPress={() => setShowCreateMeal(true)}
-                            className="mt-4 bg-blue-500 rounded-xl p-3"
+                            onPress={setAsActivePlan}
+                            className={`mb-4 rounded-xl p-4 ${isDark ? 'bg-dark-100' : 'bg-light-100'}`}
                         >
-                            <Text className="text-white text-center font-semibold">Create New Meal</Text>
+                            <Text className="text-center text-lg font-semibold text-white">
+                                Set as Active Plan
+                            </Text>
                         </TouchableOpacity>
+
+                        <TouchableOpacity
+                            onPress={() => router.push('/recipes/generate')}
+                            className={`mt-4 rounded-xl p-4 ${isDark ? 'bg-dark-100' : 'bg-light-100'}`}
+                        >
+                            <Text className="text-center text-lg font-semibold text-white">
+                                Generate Meal with FuelAI
+                            </Text>
+                        </TouchableOpacity>
+
+                        <View className="flex-row items-center my-4">
+                            <View className={`flex-1 h-px ${isDark ? 'bg-gray-400' : 'bg-gray-500'}`} />
+                            <Text className={`mx-4 font-bold text-lg ${isDark ? 'text-white' : 'text-black'}`}>Or</Text>
+                            <View className={`flex-1 h-px ${isDark ? 'bg-gray-400' : 'bg-gray-500'}`} />
+                        </View>
+
+                        <View className="flex-row gap-3">
+                            <TouchableOpacity
+                                onPress={() => setShowCreateMeal(true)}
+                                className={`flex-1 rounded-xl p-4 ${isDark ? 'bg-dark-100' : 'bg-light-100'}`}
+                            >
+                                <Text className="text-center font-semibold text-white">Manually Create Meal</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                onPress={() => router.push('/recipes/scan')}
+                                className={`flex-1 rounded-xl p-4 ${isDark ? 'bg-dark-100' : 'bg-light-100'}`}
+                            >
+                                <Text className="text-center font-semibold text-white">Scan Meal</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
                     {/* Days of the week with meal slots */}
