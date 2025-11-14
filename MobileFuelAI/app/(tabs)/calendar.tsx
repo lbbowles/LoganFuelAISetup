@@ -26,6 +26,18 @@ const UserCalendar = () => {
         arrowColor: isDark ? '#ffffff' : '#000000',
     };
 
+    // Helper to format date without timezone issues, previously would show one day off the actual day.
+    const formatDateForDisplay = (dateString: string) => {
+        const [year, month, day] = dateString.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        return date.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    }
+
     return (
         <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
             <ScrollView
@@ -82,14 +94,10 @@ const UserCalendar = () => {
                                 Selected Date
                             </Text>
                             <Text className={`text-center text-xl font-semibold mt-1 ${isDark ? "text-white" : "text-black"}`}>
-                                {new Date(selected + 'T00:00:00').toLocaleDateString('en-US', {  // FIXED: Added time
-                                    weekday: 'long',
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                })}
+                                {formatDateForDisplay(selected)}
                             </Text>
                         </View>
+
 
                         {/* Button to view the specific day */}
                         <Link href={`/calendar/${selected}`} asChild>
